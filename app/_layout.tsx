@@ -1,37 +1,52 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-
+import React from 'react';
+import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const router = useRouter();
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+  const getTitle = (routeName: string | undefined) => {
+    switch (routeName) {
+      case 'accueil':
+        return 'Mes Accueil';
+      case 'rendezvous':
+        return 'Mes Rendez-vous';
+      case 'documents':
+        return 'Mes Documents';
+      case 'messages':
+        return 'Mes Messages';
+      case 'comptes':
+        return 'Mes Comptes';
+      default:
+        return 'Doctolib';
     }
-  }, [loaded]);
+  };
 
-  if (!loaded) {
-    return null;
-  }
+  
+  const routeName = router?.route?.name;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </ThemeProvider>
+    <Stack>
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#187ecc',
+          },
+          title: getTitle(routeName), 
+        }}
+       />
+        {/* <Stack.Screen
+        name="index"
+       options={{ headerShown: false }}
+       /> */}
+      {/* <Stack.Screen
+        name="messages/[practitionerName]"
+        options={{ title: 'Rédaction du Message' }}
+      /> */}
+    </Stack>
   );
 }
