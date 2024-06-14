@@ -22,7 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.App1",
-      "googleServicesFile": "@/android/app/google-services.json"
+      "googleServicesFile" : "./google-services.json"
     },
     "web": {
       "bundler": "metro",

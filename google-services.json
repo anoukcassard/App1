@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "447273738864",
+    "project_id": "doctolib-c82cb",
+    "storage_bucket": "doctolib-c82cb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:447273738864:android:450d8a8d6ad39626588ab5",
+        "android_client_info": {
+          "package_name": "com.anonymous.App1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlWv-1776yIioKbK2TigI2IgX-iIF_ooI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
