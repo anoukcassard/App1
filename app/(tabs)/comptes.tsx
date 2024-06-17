@@ -10,10 +10,15 @@ import SignupForm from '../(souspages)/SignupForm';
 const Comptes = () => {
   const [user, setUser] = useState(null);
   const [isSignup, setIsSignup] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged((user) => {
+    const unsubscribe = auth().onAuthStateChanged(async (user) => {
       setUser(user);
+      if (user) {
+        const userDoc = await firestore().collection('users').doc(user.uid).get();
+        setUserData(userDoc.data());
+      }
     });
 
     return unsubscribe; // Clean up the subscription on unmount
@@ -61,7 +66,7 @@ const Comptes = () => {
           <FontAwesomeIcon icon={faPhone} size={16} color="#187ecc" style={styles.itemIcon} />
           <View style={styles.itemContent}>
             <Text style={styles.itemText}>Téléphone</Text>
-            <Text style={styles.itemSubtext}>06 11 77 12 50</Text>
+            <Text style={styles.itemSubtext}>{userData ? userData.phoneNumber : 'Chargement...'}</Text>
             <Text style={styles.itemVerified}>Vérifié</Text>
           </View>
           <FontAwesomeIcon icon={faChevronRight} size={16} color="#6c757d" style={styles.itemArrow} />
