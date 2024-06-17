@@ -37,11 +37,13 @@ const Comptes = () => {
     return isSignup ? <SignupForm onBackToLogin={() => setIsSignup(false)} /> : <LoginForm onSignup={() => setIsSignup(true)} />;
   }
 
+  const greeting = userData?.isDoctor ? `Bonjour Dr. ${userData?.firstName} ${userData?.lastName}` : `Bonjour Mr/Mme ${userData?.firstName} ${userData?.lastName}`;
+
   return (
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Mon compte</Text>
-          <Text style={styles.subtitle}>Votre santé. Vos données.</Text>
+          <Text style={styles.subtitle}>{greeting}</Text>
         </View>
         <View style={styles.separator} />
         <TouchableOpacity style={styles.item}>
