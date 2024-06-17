@@ -1,63 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Button } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser, faUsers, faPhone, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import LoginForm from '../(souspages)/login_form';
+import SignupForm from '../(souspages)/SignupForm';
 
 const Comptes = () => {
-  const [users, setUsers] = useState([]);
+  const [user, setUser] = useState(null);
+  const [isSignup, setIsSignup] = useState(false);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersCollection = await firestore().collection('Users').get();
-        const usersData = usersCollection.docs.map(doc => doc.data());
-        setUsers(usersData);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
+    const unsubscribe = auth().onAuthStateChanged((user) => {
+      setUser(user);
+    });
 
-    fetchUsers();
-  }, []); 
+    return unsubscribe; // Clean up the subscription on unmount
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await auth().signOut();
+      console.log('User signed out!');
+    } catch (error) {
+      console.error('Error signing out: ', error);
+    }
+  };
+
+  if (!user) {
+    return isSignup ? <SignupForm onBackToLogin={() => setIsSignup(false)} /> : <LoginForm onSignup={() => setIsSignup(true)} />;
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mon compte</Text>
-        <Text style={styles.subtitle}>Votre santé. Vos données.</Text>
-      </View>
-      <View style={styles.separator} />
-      {users.map(user => (
-        <TouchableOpacity key={user.id} style={styles.item}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Mon compte</Text>
+          <Text style={styles.subtitle}>Votre santé. Vos données.</Text>
+        </View>
+        <View style={styles.separator} />
+        <TouchableOpacity style={styles.item}>
           <FontAwesomeIcon icon={faUser} size={16} color="#187ecc" style={styles.itemIcon} />
           <View style={styles.itemContent}>
             <Text style={styles.itemText}>Mon profil</Text>
-            <Text style={styles.itemSubtext}>{user.name}</Text>
+            <Text style={styles.itemSubtext}>{user.email}</Text>
           </View>
           <FontAwesomeIcon icon={faChevronRight} size={16} color="#6c757d" style={styles.itemArrow} />
         </TouchableOpacity>
-      ))}
-      <View style={styles.separator} />
-      <TouchableOpacity style={styles.item}>
-        <FontAwesomeIcon icon={faUsers} size={16} color="#187ecc" style={styles.itemIcon} />
-        <View style={styles.itemContent}>
-          <Text style={styles.itemText}>Mes proches</Text>
-          <Text style={styles.itemSubtext}>Ajoutez et gérez les profils de vos proches</Text>
-        </View>
-        <FontAwesomeIcon icon={faChevronRight} size={16} color="#6c757d" style={styles.itemArrow} />
-      </TouchableOpacity>
-      <View style={styles.separator} />
-      <TouchableOpacity style={styles.item}>
-        <FontAwesomeIcon icon={faPhone} size={16} color="#187ecc" style={styles.itemIcon} />
-        <View style={styles.itemContent}>
-          <Text style={styles.itemText}>Téléphone</Text>
-          <Text style={styles.itemSubtext}>06 11 77 12 50</Text>
-          <Text style={styles.itemVerified}>Vérifié</Text>
-        </View>
-        <FontAwesomeIcon icon={faChevronRight} size={16} color="#6c757d" style={styles.itemArrow} />
-      </TouchableOpacity>
-    </View>
+        <View style={styles.separator} />
+        <TouchableOpacity style={styles.item}>
+          <FontAwesomeIcon icon={faUsers} size={16} color="#187ecc" style={styles.itemIcon} />
+          <View style={styles.itemContent}>
+            <Text style={styles.itemText}>Mes proches</Text>
+            <Text style={styles.itemSubtext}>Ajoutez et gérez les profils de vos proches</Text>
+          </View>
+          <FontAwesomeIcon icon={faChevronRight} size={16} color="#6c757d" style={styles.itemArrow} />
+        </TouchableOpacity>
+        <View style={styles.separator} />
+        <TouchableOpacity style={styles.item}>
+          <FontAwesomeIcon icon={faPhone} size={16} color="#187ecc" style={styles.itemIcon} />
+          <View style={styles.itemContent}>
+            <Text style={styles.itemText}>Téléphone</Text>
+            <Text style={styles.itemSubtext}>06 11 77 12 50</Text>
+            <Text style={styles.itemVerified}>Vérifié</Text>
+          </View>
+          <FontAwesomeIcon icon={faChevronRight} size={16} color="#6c757d" style={styles.itemArrow} />
+        </TouchableOpacity>
+        <View style={styles.separator} />
+        <Button title="Se déconnecter" onPress={handleLogout} />
+      </View>
   );
 };
 
