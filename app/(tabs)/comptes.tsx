@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser, faUsers, faPhone, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import { useRouter } from 'expo-router';
 import LoginForm from '../(souspages)/login_form';
 import SignupForm from '../(souspages)/SignupForm';
 
@@ -11,6 +12,7 @@ const Comptes = () => {
   const [user, setUser] = useState(null);
   const [isSignup, setIsSignup] = useState(false);
   const [userData, setUserData] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged(async (user) => {
@@ -44,7 +46,7 @@ const Comptes = () => {
           <Text style={styles.subtitle}>Votre santé. Vos données.</Text>
         </View>
         <View style={styles.separator} />
-        <TouchableOpacity style={styles.item}>
+        <TouchableOpacity style={styles.item} onPress={() => router.push('UserProfile')}>
           <FontAwesomeIcon icon={faUser} size={16} color="#187ecc" style={styles.itemIcon} />
           <View style={styles.itemContent}>
             <Text style={styles.itemText}>Mon profil</Text>
