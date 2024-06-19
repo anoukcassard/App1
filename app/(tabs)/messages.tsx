@@ -14,56 +14,56 @@ const Messages = () => {
     const router = useRouter();
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            const user = auth().currentUser;
-            if (!user) {
-                console.log('No user is logged in');
-                return;
+        const unsubscribeAuth = auth().onAuthStateChanged(user => {
+            if (user) {
+                fetchUserData(user.uid);
+            } else {
+                resetState();
             }
+        });
 
-            const userDoc = await firestore().collection('users').doc(user.uid).get();
-            if (userDoc.exists) {
-                setIsDoctor(userDoc.data().isDoctor);
-            }
-        };
-
-        fetchUserData();
+        return () => unsubscribeAuth();
     }, []);
 
-    useEffect(() => {
-        const user = auth().currentUser;
-        if (!user) {
-            console.log('No user is logged in');
-            return;
+    const fetchUserData = async (userId) => {
+        const userDoc = await firestore().collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            setIsDoctor(userDoc.data().isDoctor);
+            fetchConversations(userId, userDoc.data().isDoctor);
+        }
+    };
+
+    const fetchConversations = async (userId, isDoctor) => {
+        let conversationsQuery = firestore().collection('conversations');
+
+        if (isDoctor) {
+            conversationsQuery = conversationsQuery.where('doctorId', '==', userId);
+        } else {
+            conversationsQuery = conversationsQuery.where('patientId', '==', userId);
         }
 
-        console.log('Fetching conversations for user:', user.uid);
+        const unsubscribeConversations = conversationsQuery.onSnapshot(snapshot => {
+            const conversationsList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
 
-        const unsubscribe = firestore()
-            .collection('conversations')
-            .where('doctorId', '==', user.uid)
-            .onSnapshot(snapshot => {
-                const conversationsList = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
+            console.log('Conversations fetched:', conversationsList);
+            setConversations(conversationsList);
+            setLoading(false);
+        }, error => {
+            console.error('Error fetching conversations:', error);
+        });
 
-                console.log('Conversations fetched:', conversationsList);
-                setConversations(conversationsList);
-                setLoading(false);
-            }, error => {
-                console.error('Error fetching conversations:', error);
-            });
-
-        return () => unsubscribe();
-    }, []);
+        return () => unsubscribeConversations();
+    };
 
     useEffect(() => {
         if (!selectedConversation) return;
 
         console.log('Fetching messages for conversation:', selectedConversation.id);
 
-        const unsubscribe = firestore()
+        const unsubscribeMessages = firestore()
             .collection('conversations')
             .doc(selectedConversation.id)
             .collection('messages')
@@ -80,7 +80,7 @@ const Messages = () => {
                 console.error('Error fetching messages:', error);
             });
 
-        return () => unsubscribe();
+        return () => unsubscribeMessages();
     }, [selectedConversation]);
 
     const handleSendMessage = async () => {
@@ -106,6 +106,14 @@ const Messages = () => {
         }
     };
 
+    const resetState = () => {
+        setConversations([]);
+        setSelectedConversation(null);
+        setMessages([]);
+        setIsDoctor(false);
+        setLoading(true);
+    };
+
     if (loading) {
         return (
             <View style={styles.container}>
@@ -126,7 +134,7 @@ const Messages = () => {
                 renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => setSelectedConversation(item)}>
                         <Text style={selectedConversation?.id === item.id ? styles.selected : styles.item}>
-                            Conversation avec {item.patientId}
+                            Conversation avec {isDoctor ? item.patientId : item.doctorId}
                         </Text>
                     </TouchableOpacity>
                 )}
@@ -139,7 +147,7 @@ const Messages = () => {
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => (
                             <View style={styles.messageItem}>
-                                <Text>{item.senderId === auth().currentUser.uid ? 'Moi' : 'Patient'}: {item.text}</Text>
+                                <Text>{item.senderId === auth().currentUser.uid ? 'Moi' : 'Autre'}: {item.text}</Text>
                             </View>
                         )}
                     />
