@@ -11,13 +11,16 @@ const Messages = () => {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isDoctor, setIsDoctor] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
         const unsubscribeAuth = auth().onAuthStateChanged(user => {
             if (user) {
+                setIsAuthenticated(true);
                 fetchUserData(user.uid);
             } else {
+                setIsAuthenticated(false);
                 resetState();
             }
         });
@@ -120,6 +123,15 @@ const Messages = () => {
         setLoading(true);
     };
 
+    if (!isAuthenticated) {
+        return (
+            <View style={styles.container}>
+                <Text>Vous n'êtes pas connectés</Text>
+                <Button title="Se connecter" onPress={() => router.push('(souspages)/login_form')} />
+            </View>
+        );
+    }
+
     if (loading) {
         return (
             <View style={styles.container}>
@@ -174,6 +186,8 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     title: {
         fontSize: 24,
