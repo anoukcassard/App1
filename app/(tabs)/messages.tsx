@@ -42,10 +42,16 @@ const Messages = () => {
             conversationsQuery = conversationsQuery.where('patientId', '==', userId);
         }
 
-        const unsubscribeConversations = conversationsQuery.onSnapshot(snapshot => {
-            const conversationsList = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
+        const unsubscribeConversations = conversationsQuery.onSnapshot(async snapshot => {
+            const conversationsList = await Promise.all(snapshot.docs.map(async doc => {
+                const data = doc.data();
+                const userDoc = await firestore().collection('users').doc(isDoctor ? data.patientId : data.doctorId).get();
+                const userData = userDoc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    userName: `${userData.firstName} ${userData.lastName}`,
+                };
             }));
 
             console.log('Conversations fetched:', conversationsList);
@@ -134,7 +140,7 @@ const Messages = () => {
                 renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => setSelectedConversation(item)}>
                         <Text style={selectedConversation?.id === item.id ? styles.selected : styles.item}>
-                            Conversation avec {isDoctor ? item.patientId : item.doctorId}
+                            Conversation avec {item.userName}
                         </Text>
                     </TouchableOpacity>
                 )}
