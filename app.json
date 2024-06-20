@@ -14,7 +14,6 @@
     },
     "ios": {
       "supportsTablet": true
-      
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.App1",
-      "googleServicesFile" : "./google-services.json"
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +30,8 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
