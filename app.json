@@ -10,7 +10,10 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "android": {
+        "permissions": ["WRITE_EXTERNAL_STORAGE"]
+      }
     },
     "ios": {
       "supportsTablet": true
