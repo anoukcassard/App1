@@ -46,7 +46,7 @@ export default function RootLayout() {
                 }}
             />
             <Stack.Screen
-                name="(souspages)/UserProfile" // Ajout de la route pour le profil utilisateur
+                name="(souspages)/UserProfile"
                 options={{
                     headerShown: true,
                     headerStyle: {
