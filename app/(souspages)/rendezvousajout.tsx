@@ -1,36 +1,48 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, FlatList } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
 
 const RendezvousAjout = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [practitioners, setPractitioners] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const navigation = useNavigation();
 
     useEffect(() => {
-        // Fetch all practitioners on initial load
         fetchPractitioners();
     }, []);
 
     const fetchPractitioners = async () => {
         try {
-            const snapshot = await firestore().collection('medecin').get();
+            setLoading(true);
+            const snapshot = await firestore().collection('users')
+                .where('isDoctor', '==', true)
+                .get();
             const practitionersList = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
             }));
+            console.log('Fetched practitioners:', practitionersList); // Debug log
             setPractitioners(practitionersList);
         } catch (error) {
             console.error('Error fetching practitioners: ', error);
+            setError(error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleSearch = async () => {
         try {
+            setLoading(true);
             const endQuery = searchQuery + '\uf8ff';
             const snapshot = await firestore()
-                .collection('medecin')
-                .where('nom', '>=', searchQuery)
-                .where('nom', '<=', endQuery)
+                .collection('users')
+                .where('isDoctor', '==', true)
+                .where('lastName', '>=', searchQuery)
+                .where('lastName', '<=', endQuery)
                 .get();
 
             const searchResults = snapshot.docs.map(doc => ({
@@ -38,12 +50,24 @@ const RendezvousAjout = () => {
                 ...doc.data(),
             }));
 
-            console.log('Search results:', searchResults);  // Log search results for debugging
+            console.log('Search results:', searchResults); // Debug log
             setPractitioners(searchResults);
         } catch (error) {
             console.error('Error searching practitioners:', error);
+            setError(error);
+        } finally {
+            setLoading(false);
         }
     };
+
+    const renderItem = ({ item }) => (
+        <TouchableOpacity style={styles.listItem} onPress={() => navigation.navigate('PrendreRendezvous', { doctor: item })}>
+            <Text>{item.firstName} {item.lastName}</Text>
+            <Text>{item.phoneNumber}</Text>
+            <Text>{item.email}</Text>
+            {/* Ajoutez d'autres champs si nécessaire */}
+        </TouchableOpacity>
+    );
 
     return (
         <View style={styles.container}>
@@ -56,19 +80,13 @@ const RendezvousAjout = () => {
                 onChangeText={setSearchQuery}
             />
             <Button title="Rechercher" onPress={handleSearch} />
+            {error && <Text style={styles.errorText}>Une erreur est survenue : {error.message}</Text>}
+            {loading && <Text>Chargement...</Text>}
             <Text style={styles.sectionTitle}>Mes praticiens</Text>
             <FlatList
                 data={practitioners}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.listItem}>
-                        <Text>{item.prenom} {item.nom}</Text>
-                        <Text>{item.type}</Text>
-                        <Text>{item.cabinet}</Text>
-                        <Text>{item.adresse}</Text>
-                        <Text>{item.num}</Text>
-                    </View>
-                )}
+                renderItem={renderItem}
             />
         </View>
     );
@@ -105,6 +123,10 @@ const styles = StyleSheet.create({
         padding: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
+    },
+    errorText: {
+        color: 'red',
+        marginBottom: 20,
     },
 });
 
