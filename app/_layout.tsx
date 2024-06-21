@@ -17,10 +17,12 @@ export default function RootLayout() {
                 return 'Mes Documents';
             case 'messages':
                 return 'Mes Messages';
-            case ' comptes':
+            case 'comptes':
                 return 'Mes Comptes';
             case 'UserProfile':
                 return 'Profil Utilisateur';
+            case 'envoimessage':
+                return 'Envoyer un Message';
             default:
                 return 'Doctolib';
         }
@@ -47,6 +49,16 @@ export default function RootLayout() {
             />
             <Stack.Screen
                 name="(souspages)/UserProfile"
+                options={{
+                    headerShown: true,
+                    headerStyle: {
+                        backgroundColor: '#187ecc',
+                    },
+                    title: getTitle(routeName),
+                }}
+            />
+            <Stack.Screen
+                name="(souspages)/envoimessage"
                 options={{
                     headerShown: true,
                     headerStyle: {
