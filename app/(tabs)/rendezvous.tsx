@@ -15,7 +15,7 @@ type RootStackParamList = {
 const Tab = createMaterialTopTabNavigator();
 
 const AvenirScreen = () => {
-  
+
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   return (

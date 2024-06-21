@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, FlatList } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
+import {Link} from 'expo-router';
 
 const RendezvousAjout = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -61,13 +62,14 @@ const RendezvousAjout = () => {
                 data={practitioners}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
+                    <Link href={`/practitioner/${item.id}`}>
                     <View style={styles.listItem}>
+
                         <Text>{item.prenom} {item.nom}</Text>
                         <Text>{item.type}</Text>
-                        <Text>{item.cabinet}</Text>
-                        <Text>{item.adresse}</Text>
-                        <Text>{item.num}</Text>
+                        <Text>{item.ville}</Text>
                     </View>
+                        </Link>
                 )}
             />
         </View>

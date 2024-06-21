@@ -1,20 +1,51 @@
-import Name from '@/components/Name';
-import { Link } from 'expo-router';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { useRoute } from '@react-navigation/native';
 
-import { Text, View } from "react-native";
+const Avenir = () => {
+    const route = useRoute();
+    const { appointment } = route.params;
 
+    if (!appointment) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.message}>Aucun rendez-vous à afficher.</Text>
+            </View>
+        );
+    }
 
-export default function Avenirpasses() {
-  return (
-    <View
-      style={{
+    return (
+        <View style={styles.container}>
+            <Text style={styles.header}>Résumé du Rendez-vous</Text>
+            <Text style={styles.detail}>Médecin: {appointment.practitionerName}</Text>
+            <Text style={styles.detail}>Date: {appointment.date}</Text>
+            <Text style={styles.detail}>Heure: {appointment.time}</Text>
+            {/* Ajoutez d'autres détails ici si nécessaire */}
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      
-      <Text>Bienvenu dans l'ecran à venir<Name name={"Anouk"}/></Text>
-    </View>
-  );
-}
+        backgroundColor: '#fff',
+        padding: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    header: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 16,
+    },
+    detail: {
+        fontSize: 18,
+        marginBottom: 8,
+    },
+    message: {
+        fontSize: 18,
+        color: 'gray',
+    },
+});
+
+export default Avenir;
