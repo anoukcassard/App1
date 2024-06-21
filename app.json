@@ -14,7 +14,6 @@
     },
     "ios": {
       "supportsTablet": true
-      
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.App1",
-      "googleServicesFile" : "./google-services.json"
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -35,6 +34,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "58b02a68-cbf9-4383-aad0-540ff897feca"
+      }
     }
   }
 }
