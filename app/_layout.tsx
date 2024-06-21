@@ -17,9 +17,9 @@ export default function RootLayout() {
                 return 'Mes Documents';
             case 'messages':
                 return 'Mes Messages';
-            case 'comptes':
+            case ' comptes':
                 return 'Mes Comptes';
-            case 'UserProfile': // Ajout de la route pour le profil utilisateur
+            case 'UserProfile':
                 return 'Profil Utilisateur';
             default:
                 return 'Doctolib';
@@ -38,6 +38,11 @@ export default function RootLayout() {
                         backgroundColor: '#187ecc',
                     },
                     title: getTitle(routeName),
+                    headerTintColor: "#FFF",
+                    headerTitleStyle: {
+                        fontFamily: "PlaywriteNZ-Regular",
+                        // fontWeight: "400",
+                    }
                 }}
             />
             <Stack.Screen
