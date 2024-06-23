@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+import { RectButton, Swipeable } from 'react-native-gesture-handler';
 
 const AvenirScreen = () => {
     const [appointments, setAppointments] = useState([]);
@@ -36,6 +37,24 @@ const AvenirScreen = () => {
         return () => unsubscribe();
     }, []);
 
+    const handleDelete = async (id) => {
+        try {
+            await firestore().collection('appointments').doc(id).delete();
+        } catch (error) {
+            console.error("Error deleting appointment: ", error);
+        }
+    };
+
+    const renderRightActions = (progress, dragX, id) => {
+        return (
+            <View style={styles.deleteButtonContainer}>
+                <RectButton style={styles.deleteButton} onPress={() => handleDelete(id)}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={30} color="#fff" />
+                </RectButton>
+            </View>
+        );
+    };
+
     if (loading) {
         return <ActivityIndicator size="large" color="#187ecc" />;
     }
@@ -46,11 +65,13 @@ const AvenirScreen = () => {
                 data={appointments}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <View style={styles.appointmentItem}>
-                        <Text style={styles.appointmentText}>
-                            Rendez-vous avec le Dr. {item.doctorName} le {new Date(item.date).toLocaleString()}
-                        </Text>
-                    </View>
+                    <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item.id)}>
+                        <View style={styles.appointmentItem}>
+                            <Text style={styles.appointmentText}>
+                                Rendez-vous avec le Dr. {item.doctorName} le {new Date(item.date).toLocaleString()}
+                            </Text>
+                        </View>
+                    </Swipeable>
                 )}
                 ListEmptyComponent={() => (
                     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -91,9 +112,21 @@ const styles = StyleSheet.create({
         padding: 20,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
+        backgroundColor: '#fff',
     },
     appointmentText: {
         fontSize: 18,
+    },
+    deleteButtonContainer: {
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+    },
+    deleteButton: {
+        backgroundColor: '#ff4d4d',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 75,
+        height: '100%',
     },
 });
 
