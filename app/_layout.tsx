@@ -42,6 +42,11 @@ export default function RootLayout() {
                         backgroundColor: '#187ecc',
                     },
                     title: getTitle(routeName),
+                    headerTintColor: "#FFF",
+                    headerTitleStyle: {
+                        fontFamily: "PlaywriteNZ-Regular",
+                        // fontWeight: "400",
+                    }
                 }}
             />
             <Stack.Screen
