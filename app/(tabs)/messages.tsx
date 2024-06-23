@@ -1,20 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { useRouter } from 'expo-router';
 
 const Messages = () => {
     const [conversations, setConversations] = useState([]);
-    const [selectedConversation, setSelectedConversation] = useState(null);
-    const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [selectedConversation, setSelectedConversation] = useState(null);
+    const [newMessage, setNewMessage] = useState('');
     const [isDoctor, setIsDoctor] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const router = useRouter();
 
     useEffect(() => {
+        const fetchUserData = async (userId) => {
+            try {
+                const userDoc = await firestore().collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    setIsDoctor(userDoc.data().isDoctor);
+                    fetchConversations(userId, userDoc.data().isDoctor);
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                setError(error);
+                setLoading(false);
+            }
+        };
+
         const unsubscribeAuth = auth().onAuthStateChanged(user => {
             if (user) {
                 setIsAuthenticated(true);
@@ -28,49 +41,8 @@ const Messages = () => {
         return () => unsubscribeAuth();
     }, []);
 
-    const fetchUserData = async (userId) => {
-        const userDoc = await firestore().collection('users').doc(userId).get();
-        if (userDoc.exists) {
-            setIsDoctor(userDoc.data().isDoctor);
-            fetchConversations(userId, userDoc.data().isDoctor);
-        }
-    };
-
-    const fetchConversations = async (userId, isDoctor) => {
-        let conversationsQuery = firestore().collection('conversations');
-
-        if (isDoctor) {
-            conversationsQuery = conversationsQuery.where('doctorId', '==', userId);
-        } else {
-            conversationsQuery = conversationsQuery.where('patientId', '==', userId);
-        }
-
-        const unsubscribeConversations = conversationsQuery.onSnapshot(async snapshot => {
-            const conversationsList = await Promise.all(snapshot.docs.map(async doc => {
-                const data = doc.data();
-                const userDoc = await firestore().collection('users').doc(isDoctor ? data.patientId : data.doctorId).get();
-                const userData = userDoc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    userName: `${userData.firstName} ${userData.lastName}`,
-                };
-            }));
-
-            console.log('Conversations fetched:', conversationsList);
-            setConversations(conversationsList);
-            setLoading(false);
-        }, error => {
-            console.error('Error fetching conversations:', error);
-        });
-
-        return () => unsubscribeConversations();
-    };
-
     useEffect(() => {
         if (!selectedConversation) return;
-
-        console.log('Fetching messages for conversation:', selectedConversation.id);
 
         const unsubscribeMessages = firestore()
             .collection('conversations')
@@ -87,16 +59,54 @@ const Messages = () => {
                 setMessages(messagesList);
             }, error => {
                 console.error('Error fetching messages:', error);
+                setError(error);
             });
 
         return () => unsubscribeMessages();
     }, [selectedConversation]);
 
-    const handleSendMessage = async () => {
-        const user = auth().currentUser;
-        if (!user || !selectedConversation) return;
+    const resetState = () => {
+        setConversations([]);
+        setMessages([]);
+        setSelectedConversation(null);
+        setNewMessage('');
+        setIsDoctor(false);
+        setLoading(false);
+    };
 
-        console.log('Sending message:', message);
+    const fetchConversations = async (userId, isDoctor) => {
+        try {
+            setLoading(true);
+            const query = firestore()
+                .collection('conversations')
+                .where(isDoctor ? 'doctorId' : 'patientId', '==', userId)
+                .where('isOpen', '==', true);
+
+            const snapshot = await query.get();
+            const conversationsList = await Promise.all(snapshot.docs.map(async (doc) => {
+                const data = doc.data();
+                const otherUserId = isDoctor ? data.patientId : data.doctorId;
+                const userDoc = await firestore().collection('users').doc(otherUserId).get();
+                const userData = userDoc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    userName: `${userData.firstName} ${userData.lastName}`,
+                };
+            }));
+
+            console.log('Conversations fetched:', conversationsList);
+            setConversations(conversationsList);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching conversations:', error);
+            setError(error);
+            setLoading(false);
+        }
+    };
+
+    const handleSendMessage = async () => {
+        if (!newMessage.trim()) return;
 
         try {
             await firestore()
@@ -104,78 +114,70 @@ const Messages = () => {
                 .doc(selectedConversation.id)
                 .collection('messages')
                 .add({
-                    senderId: user.uid,
-                    text: message,
+                    text: newMessage,
+                    senderId: auth().currentUser.uid,
                     createdAt: firestore.FieldValue.serverTimestamp(),
                 });
-
-            setMessage('');
+            setNewMessage('');
         } catch (error) {
             console.error('Error sending message:', error);
+            Alert.alert('Error', 'An error occurred while sending the message');
         }
     };
 
-    const resetState = () => {
-        setConversations([]);
-        setSelectedConversation(null);
-        setMessages([]);
-        setIsDoctor(false);
-        setLoading(true);
+    const renderConversationItem = ({ item }) => (
+        <TouchableOpacity style={styles.conversationItem} onPress={() => setSelectedConversation(item)}>
+            <Text style={styles.conversationText}>
+                Conversation with {item.userName}
+            </Text>
+        </TouchableOpacity>
+    );
+
+    const renderMessageItem = ({ item }) => {
+        const isCurrentUser = item.senderId === auth().currentUser.uid;
+        return (
+            <View style={[styles.messageItem, isCurrentUser ? styles.messageItemRight : styles.messageItemLeft]}>
+                <Text style={styles.messageText}>{item.text}</Text>
+                <Text style={styles.messageDate}>{item.createdAt?.toDate().toLocaleString()}</Text>
+            </View>
+        );
     };
-
-    if (!isAuthenticated) {
-        return (
-            <View style={styles.container}>
-                <Text>Vous n'êtes pas connectés</Text>
-                <Button title="Se connecter" onPress={() => router.push('(souspages)/login_form')} />
-            </View>
-        );
-    }
-
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <Text>Chargement...</Text>
-            </View>
-        );
-    }
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Messages</Text>
-            {isDoctor && (
-                <Button title="Rechercher un patient" onPress={() => router.push('(souspages)/envoimessage')} />
-            )}
-            <FlatList
-                data={conversations}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => setSelectedConversation(item)}>
-                        <Text style={selectedConversation?.id === item.id ? styles.selected : styles.item}>
-                            Conversation avec {item.userName}
-                        </Text>
-                    </TouchableOpacity>
-                )}
-                ListEmptyComponent={<Text>Aucune conversation en cours.</Text>}
-            />
-            {selectedConversation && (
+            {error && <Text style={styles.errorText}>Une erreur est survenue : {error.message}</Text>}
+            {loading ? <ActivityIndicator size="large" color="#187ecc" /> : (
                 <>
+                    {isDoctor && (
+                        <TouchableOpacity style={styles.searchButton} onPress={() => /* navigate to search screen */ { }}>
+                            <Text style={styles.searchButtonText}>Chercher un patient</Text>
+                        </TouchableOpacity>
+                    )}
                     <FlatList
-                        data={messages}
+                        data={conversations}
                         keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <View style={styles.messageItem}>
-                                <Text>{item.senderId === auth().currentUser.uid ? 'Moi' : 'Autre'}: {item.text}</Text>
+                        renderItem={renderConversationItem}
+                        contentContainerStyle={styles.conversationList}
+                    />
+                    {selectedConversation && (
+                        <>
+                            <FlatList
+                                data={messages}
+                                keyExtractor={(item) => item.id}
+                                renderItem={renderMessageItem}
+                                contentContainerStyle={styles.messageList}
+                            />
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    value={newMessage}
+                                    onChangeText={setNewMessage}
+                                    placeholder="Type a message"
+                                />
+                                <Button title="Send" onPress={handleSendMessage} />
                             </View>
-                        )}
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Votre message"
-                        value={message}
-                        onChangeText={setMessage}
-                    />
-                    <Button title="Envoyer" onPress={handleSendMessage} />
+                        </>
+                    )}
                 </>
             )}
         </View>
@@ -183,40 +185,32 @@ const Messages = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-    },
-    item: {
-        padding: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
-    },
-    selected: {
-        padding: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
-        backgroundColor: '#d3d3d3',
-    },
-    input: {
-        height: 40,
-        borderColor: '#187ecc',
-        borderWidth: 1,
-        paddingHorizontal: 10,
-        marginBottom: 20,
-    },
+    container: { flex: 1, padding: 20 },
+    errorText: { color: 'red', marginBottom: 20 },
+    searchButton: { marginBottom: 10, padding: 10, backgroundColor: '#187ecc', borderRadius: 5 },
+    searchButtonText: { color: 'white', textAlign: 'center' },
+    conversationList: { marginBottom: 20 },
+    conversationItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' },
+    conversationText: { fontSize: 16 },
+    messageList: { marginBottom: 20 },
     messageItem: {
         padding: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
+        borderRadius: 10,
+        marginBottom: 10,
+        maxWidth: '80%',
     },
+    messageItemLeft: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#acacac',
+    },
+    messageItemRight: {
+        alignSelf: 'flex-end',
+        backgroundColor: '#187ecc',
+    },
+    messageText: { fontSize: 16, color: 'white' },
+    messageDate: { fontSize: 12, color: 'lightgray' },
+    inputContainer: { flexDirection: 'row', alignItems: 'center' },
+    input: { flex: 1, borderColor: '#ddd', borderWidth: 1, borderRadius: 5, padding: 10, marginRight: 10 },
 });
 
 export default Messages;
