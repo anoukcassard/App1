@@ -39,6 +39,7 @@ const PrendreRendezvous = ({ route, navigation }) => {
                 .collection('appointments')
                 .add({
                     doctorId: doctor.id,
+                    doctorName: `${doctor.firstName} ${doctor.lastName}`,
                     patientId: patientId,
                     date: date.toISOString(),
                     status: 'pending',
@@ -51,6 +52,7 @@ const PrendreRendezvous = ({ route, navigation }) => {
             alert('Erreur lors de la prise de rendez-vous. Veuillez réessayer.');
         }
     };
+
 
     return (
         <View style={styles.container}>
