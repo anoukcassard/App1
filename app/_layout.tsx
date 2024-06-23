@@ -23,6 +23,8 @@ export default function RootLayout() {
                 return 'Profil Utilisateur';
             case 'envoimessage':
                 return 'Envoyer un Message';
+            case 'PrendreRendezvous':
+                return 'Prendre Rendez-vous';
             default:
                 return 'Doctolib';
         }
@@ -40,6 +42,11 @@ export default function RootLayout() {
                         backgroundColor: '#187ecc',
                     },
                     title: getTitle(routeName),
+                    headerTintColor: "#FFF",
+                    headerTitleStyle: {
+                        fontFamily: "PlaywriteNZ-Regular",
+                        // fontWeight: "400",
+                    }
                 }}
             />
             <Stack.Screen
@@ -54,6 +61,16 @@ export default function RootLayout() {
             />
             <Stack.Screen
                 name="(souspages)/envoimessage"
+                options={{
+                    headerShown: true,
+                    headerStyle: {
+                        backgroundColor: '#187ecc',
+                    },
+                    title: getTitle(routeName),
+                }}
+            />
+            <Stack.Screen
+                name="(souspages)/PrendreRendezvous"
                 options={{
                     headerShown: true,
                     headerStyle: {
