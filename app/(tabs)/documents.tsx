@@ -6,7 +6,7 @@ import storage from '@react-native-firebase/storage';
 import auth from '@react-native-firebase/auth';
 import * as FileSystem from 'expo-file-system';
 import firestore from '@react-native-firebase/firestore';
-import { ScrollView, ActivityIndicator } from 'react-native';
+import { ScrollView } from 'react-native';
 
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', padding: 20 },
@@ -32,37 +32,26 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginLeft: 10,
     },
-    errorText: {
-        color: 'red',
-        marginBottom: 20,
-    },
 });
+
 
 const DocumentsScreen = () => {
     const [documents, setDocuments] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
         const unsubscribe = auth().onAuthStateChanged(async (user) => {
             if (user) {
                 const userId = user.uid;
                 const userRef = firestore().collection('users').doc(userId);
-                try {
-                    const userData = await userRef.get();
-                    if (userData.exists) {
-                        setCurrentUser(userData.data());
-                        loadDocuments(userData.data());
-                    }
-                } catch (error) {
-                    console.error('Error fetching user data:', error);
-                    setError(error);
+                const userData = await userRef.get();
+                if (userData.exists) {
+                    setCurrentUser(userData.data());
+                    loadDocuments(userData.data());
                 }
             } else {
                 setCurrentUser(null);
                 setDocuments([]);  // Clear documents if no user is logged in
-                setLoading(false);
             }
         });
 
@@ -71,23 +60,22 @@ const DocumentsScreen = () => {
 
     const loadDocuments = (user) => {
         let query;
+        console.log(user);
         if (user.isDoctor) {
             query = firestore().collection('documents');
         } else {
             query = firestore().collection('documents').where('email', '==', user.email);
         }
-
+        console.log(query);
         const unsubscribeDocs = query.onSnapshot(snapshot => {
             const updatedDocuments = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+            console.log(updatedDocuments);
             setDocuments(updatedDocuments);
-            setLoading(false);
         }, error => {
             console.error("Error getting documents:", error);
-            setError(error);
-            setLoading(false);
         });
 
         return unsubscribeDocs;
@@ -95,25 +83,38 @@ const DocumentsScreen = () => {
 
     const pickDocument = async () => {
         if (!currentUser) {
+            console.log('No user logged in');
             Alert.alert('Error', 'Please log in first');
             return;
         }
 
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: '*/*',
+                type: '*/*', // Sélectionne tous les types de documents
             });
 
-            if (!result.cancelled) {
-                const document = result;
+            console.log('Document Picker Result:', result);
+
+            if (!result.cancelled) { // Correction ici
+                const document = result.assets[0];
                 const { firstName, lastName } = currentUser || {
                     firstName: 'Anonyme',
                     lastName: '',
                 };
                 let sender = `${firstName} ${lastName}`;
-                const downloadUrl = await uploadDocument(document.uri, document.name, sender, currentUser.email);
+                const downloadUrl = await uploadDocument(document.uri, document.name , sender,currentUser.email );
 
                 loadDocuments(currentUser);
+
+                /*setDocuments((prevDocuments) => [
+                    ...prevDocuments,
+                    {
+                        name: document.name,
+                        url: downloadUrl,
+                        sender: `${firstName} ${lastName}`,
+                        dateTime: dateTimeString,
+                    },
+                ]);*/
 
                 console.log('File available at:', downloadUrl);
             } else {
@@ -125,15 +126,14 @@ const DocumentsScreen = () => {
             Alert.alert('Error', 'An error occurred while picking the document');
         }
     };
-
-    const uploadDocument = async (uri, fileName, sender, email) => {
+    const uploadDocument = async ( uri, fileName,sender,email) => {
         try {
             const reference = storage().ref(fileName);
             await reference.putFile(uri);
             const url = await reference.getDownloadURL();
             const currentDate = new Date();
             const dateTimeString = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-            await firestore().collection('documents').add({ name: fileName, url: url, dateTime: dateTimeString, sender: sender, email: email });
+            await firestore().collection('documents').add({name : fileName , url : url , dateTime : dateTimeString,sender : sender,email:email});
             return url;
         } catch (error) {
             console.error('Upload failed:', error);
@@ -173,32 +173,29 @@ const DocumentsScreen = () => {
             <ScrollView>
                 <View style={styles.container}>
                     <Text style={styles.title}>Contenu des documents</Text>
-                    {error && <Text style={styles.errorText}>Une erreur est survenue : {error.message}</Text>}
-                    {loading ? <ActivityIndicator size="large" color="#187ecc" /> : (
-                        <View style={styles.documentList}>
-                            {documents.map((document, index) => (
-                                <TouchableOpacity key={index} style={styles.documentRow} onPress={() => openDocument(document.url)}>
-                                    {document.url && document.url.endsWith('.jpg') ? (
-                                        <Image
-                                            source={{ uri: document.url }}
-                                            style={{ width: 50, height: 50, marginRight: 10, borderRadius: 5 }}
-                                        />
-                                    ) : (
-                                        <Image
-                                            source={{ uri: document.url }}
-                                            style={{ width: 50, height: 50, marginRight: 10, borderRadius: 5 }}
-                                            resizeMode="cover"
-                                        />
-                                    )}
-                                    <View>
-                                        <Text style={styles.documentName}>{document.name}</Text>
-                                        <Text style={{ fontSize: 12, color: 'gray' }}>Déposé par {document.sender}</Text>
-                                        <Text style={{ fontSize: 12, color: 'gray' }}>{document.dateTime}</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )}
+                    <View style={styles.documentList}>
+                        {documents.map((document, index) => (
+                            <TouchableOpacity key={index} style={styles.documentRow} onPress={() => openDocument(document.url)}>
+                                {document.url && document.url.endsWith('.jpg') ? (
+                                    <Image
+                                        source={{ uri: document.url }}
+                                        style={{ width: 50, height: 50, marginRight: 10, borderRadius: 5 }}
+                                    />
+                                ) : (
+                                    <Image
+                                        source={{ uri: document.url }}
+                                        style={{ width: 50, height: 50, marginRight: 10, borderRadius: 5 }}
+                                        resizeMode="cover"
+                                    />
+                                )}
+                                <View>
+                                    <Text style={styles.documentName}>{document.name}</Text>
+                                    <Text style={{ fontSize: 12, color: 'gray' }}>Déposé par {document.sender}</Text>
+                                    <Text style={{ fontSize: 12, color: 'gray' }}>{document.dateTime}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </View>
             </ScrollView>
             <View style={styles.addButton}>
