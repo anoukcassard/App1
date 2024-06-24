@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import { useRouter } from 'expo-router';
 
 const EnvoiMessage = () => {
   const [patients, setPatients] = useState([]);
@@ -9,6 +10,7 @@ const EnvoiMessage = () => {
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [message, setMessage] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -37,7 +39,6 @@ const EnvoiMessage = () => {
     if (!user || !selectedPatient) return;
 
     try {
-      // Vérifier si une conversation existe déjà entre le médecin et le patient
       const existingConversations = await firestore()
           .collection('conversations')
           .where('doctorId', '==', user.uid)
@@ -46,7 +47,6 @@ const EnvoiMessage = () => {
 
       let conversationRef;
       if (existingConversations.empty) {
-        // Créer une nouvelle conversation
         conversationRef = firestore().collection('conversations').doc();
         await conversationRef.set({
           doctorId: user.uid,
@@ -55,11 +55,9 @@ const EnvoiMessage = () => {
           createdAt: firestore.FieldValue.serverTimestamp(),
         });
       } else {
-        // Utiliser la conversation existante
         conversationRef = existingConversations.docs[0].ref;
       }
 
-      // Ajouter le message à la conversation
       await conversationRef.collection('messages').add({
         senderId: user.uid,
         text: message,
@@ -69,6 +67,7 @@ const EnvoiMessage = () => {
       setMessage('');
       setSelectedPatient(null);
       setSearchQuery('');
+      router.push('/messages'); // Use router.push to navigate back to the messages screen after sending the message
     } catch (error) {
       console.error('Error sending message:', error);
     }

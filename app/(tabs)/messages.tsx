@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import { useRouter } from 'expo-router';
 
 const Messages = () => {
     const [conversations, setConversations] = useState([]);
@@ -12,6 +13,7 @@ const Messages = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         const fetchUserData = async (userId) => {
@@ -138,18 +140,29 @@ const Messages = () => {
         return (
             <View style={[styles.messageItem, isCurrentUser ? styles.messageItemRight : styles.messageItemLeft]}>
                 <Text style={styles.messageText}>{item.text}</Text>
-                <Text style={styles.messageDate}>{item.createdAt?.toDate().toLocaleString()}</Text>
+                <Text style={styles.messageDate}>{new Date(item.createdAt?.toDate()).toLocaleString()}</Text>
             </View>
         );
     };
 
+    if (!isAuthenticated) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.errorText}>Vous n'êtes pas connecté</Text>
+                <TouchableOpacity style={styles.searchButton} onPress={() => router.push('/login_form')}>
+                    <Text style={styles.searchButtonText}>Se connecter</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
-            {error && <Text style={styles.errorText}>Une erreur est survenue : {error.message}</Text>}
+            {error && <Text style={styles.errorText}>Erreur : {error.message}</Text>}
             {loading ? <ActivityIndicator size="large" color="#187ecc" /> : (
                 <>
                     {isDoctor && (
-                        <TouchableOpacity style={styles.searchButton} onPress={() => /* navigate to search screen */ { }}>
+                        <TouchableOpacity style={styles.searchButton} onPress={() => router.push('/(souspages)/envoimessage')}>
                             <Text style={styles.searchButtonText}>Chercher un patient</Text>
                         </TouchableOpacity>
                     )}
